@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neon Center Hoops | 現代感街頭投籃</title>
+    <style>
+        :root {
+            --bg-color: #060913;
+            --primary-neon: #00f2fe;
+            --secondary-neon: #4facfe;
+            --accent-neon: #ff0055;
+            --text-color: #ffffff;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        #gameCanvas {
+            display: block;
+            touch-action: none;
+        }
+
+        /* 玻璃擬態 UI */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 25px;
+        }
+
+        .score-container {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 12px 35px;
+            border-radius: 50px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 30px rgba(0, 242, 254, 0.15);
+            text-align: center;
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .score-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--secondary-neon);
+            margin-bottom: 2px;
+        }
+
+        #score {
+            font-size: 54px;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--primary-neon), var(--secondary-neon));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 15px rgba(0, 242, 254, 0.6));
+        }
+
+        .score-bounce {
+            transform: scale(1.15) rotate(2deg);
+        }
+
+        #hint {
+            position: absolute;
+            bottom: 18%;
+            font-size: 15px;
+            letter-spacing: 1px;
+            color: rgba(255, 255, 255, 0.4);
+            animation: pulse 2s infinite;
+            font-weight: 300;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; transform: scale(0.98); }
+            50% { opacity: 0.7; transform: scale(1.02); }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="ui-layer">
+        <div class="score-container" id="scoreBoard">
+            <div class="score-label">STREET SCORE</div>
+            <div id="score">0</div>
+        </div>
+        <div id="hint">🏀 輕觸球並向上滑動投籃</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const scoreBoardEl = document.getElementById('scoreBoard');
+
+        let width, height, dpr;
+        let score = 0;
+        let particles = [];
+        let swipeStart = { x: 0, y: 0, time: 0 };
+        let isDragging = false;
+
+        // 物理常數 (前向投籃調整)
+        const GRAVITY = 0.5;
+        const WIND_RESISTANCE = 0.99;
+
+        function resize() {
+            dpr = window.devicePixelRatio || 1;
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            ctx.scale(dpr, dpr);
+            
+            if (hoop) hoop.updatePosition();
+            if (ball) ball.reset();
+        }
+
+        // 1. 置中藍框物件
+        class Hoop {
+            constructor() {
+                this.updatePosition();
+            }
+
+            updatePosition() {
+                this.x = width / 2;          // 橫向絕對置中
+                this.y = height * 0.28;      // 縱向位於上方約 1/3 處
+                this.radius = Math.min(width * 0.1, 55); // 根據螢幕大小縮放籃框
+                this.backboardW = this.radius * 2.8;
+                this.backboardH = this.radius * 1.8;
+            }
+
+            draw() {
+                ctx.save();
+                
+                // 繪製科技感透明籃板
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.02)';
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+                ctx.lineWidth = 3;
+                ctx.shadowColor = 'rgba(0,0,0,0.3)';
+                ctx.shadowBlur = 10;
+                
+                // 籃板外框
+                ctx.strokeRect(this.x - this.backboardW/2, this.y - this.backboardH, this.backboardW, this.backboardH);
+                ctx.fillRect(this.x - this.backboardW/2, this.y - this.backboardH, this.backboardW, this.backboardH);
+                
+                // 籃板內框
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+                ctx.strokeRect(this.x - this.backboardW/5, this.y - this.backboardH/1.8, this.backboardW/2.5, this.backboardH/2.5);
+
+                // 繪製半透明籃網 (呈現縱深感，先畫網再畫框，球才會穿過去)
+                ctx.beginPath();
+                ctx.moveTo(this.x - this.radius, this.y);
+                ctx.quadraticCurveTo(this.x - this.radius*0.6, this.y + this.radius*1.2, this.x - this.radius*0.4, this.y + this.radius * 1.3);
+                ctx.lineTo(this.x + this.radius*0.4, this.y + this.radius * 1.3);
+                ctx.quadraticCurveTo(this.x + this.radius*0.6, this.y + this.radius*1.2, this.x + this.radius, this.y);
+                const netGrad = ctx.createLinearGradient(this.x, this.y, this.x, this.y + this.radius*1.3);
+                netGrad.addColorStop(0, 'rgba(255, 255, 255, 0.35)');
+                netGrad.addColorStop(1, 'rgba(255, 255, 255, 0.02)');
+                ctx.fillStyle = netGrad;
+                ctx.fill();
+
+                // 繪製耀眼霓虹籃框
+                ctx.beginPath();
+                // 橢圓化籃框營造3D立體視角
+                ctx.ellipse(this.x, this.y, this.radius, this.radius * 0.3, 0, 0, Math.PI * 2);
+                ctx.lineWidth = 7;
+                ctx.strokeStyle = '#ff0055';
+                ctx.shadowColor = '#ff0055';
+                ctx.shadowBlur = 20;
+                ctx.stroke();
+
+                ctx.restore();
+            }
+        }
+
+        // 2. 3D 縮放籃球物件
+        class Ball {
+            constructor() {
+                this.baseRadius = Math.min(width * 0.09, 45); // 初始大小
+                this.reset();
+            }
+
+            reset() {
+                this.baseRadius = Math.min(width * 0.09, 45);
+                this.x = width / 2;          // 球初始置中
+                this.y = height * 0.82;      // 位於螢幕下方
+                this.radius = this.baseRadius;
+                this.vx = 0;
+                this.vy = 0;
+                this.scale = 1;              // 3D 縮放比例
+                this.isFlying = false;
+                this.scored = false;
+                this.zProgress = 0;          // 飛向遠方的進度 (0到1)
+            }
+
+            update() {
+                if (!this.isFlying) return;
+
+                // 傳統2D平面移動
+                this.vy += GRAVITY;
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // 核心：模擬 3D 縱深感 (球飛上去時要變小)
+                if (this.vy < 0) {
+                    // 上升期：球平滑縮小
+                    this.zProgress += 0.018; 
+                    this.scale = 1 - (this.zProgress * 0.45); // 最多縮小 45%
+                } else {
+                    // 下落期：保持大小或稍微因重力感覺再改變
+                    this.scale = Math.max(0.55, this.scale);
+                }
+                this.radius = this.baseRadius * this.scale;
+
+                // 邊界反彈
+                if (this.x - this.radius < 0 || this.x + this.radius > width) {
+                    this.vx *= -0.6;
+                    this.x = this.x - this.radius < 0 ? this.radius : width - this.radius;
+                }
+
+                // 進球判定 (在最高點附近且砸中置中藍框範圍)
+                if (!this.scored && this.vy > 0 && this.y >= hoop.y - 15 && this.y <= hoop.y + 20) {
+                    let distToCenter = Math.abs(this.x - hoop.x);
+                    // 考慮到球變小了，判定要精準
+                    if (distToCenter < hoop.radius * 0.8) {
+                        this.scored = true;
+                        this.handleScore();
+                        // 進球後給予垂直向下的阻尼，讓球順暢穿過網子墜落
+                        this.vx *= 0.2;
+                        this.vy = 4; 
+                    } else if (distToCenter < hoop.radius + this.radius) {
+                        // 砸到籃框邊緣彈開
+                        this.vx = (this.x - hoop.x) * 0.3;
+                        this.vy *= -0.4;
+                    }
+                }
+
+                // 超出邊界或掉到下方則重置
+                if (this.y - this.radius > height || this.y < -200) {
+                    this.reset();
+                }
+            }
+
+            draw() {
+                ctx.save();
+                
+                // 拖曳時的微發光
+                ctx.shadowColor = '#ff6b00';
+                ctx.shadowBlur = isDragging && !this.isFlying ? 35 : 15;
+
+                // 繪製球體
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                const grad = ctx.createRadialGradient(this.x - this.radius*0.3, this.y - this.radius*0.3, this.radius*0.1, this.x, this.y, this.radius);
+                grad.addColorStop(0, '#ff9e00');
+                grad.addColorStop(1, '#e65c00');
+                ctx.fillStyle = grad;
+                ctx.fill();
+
+                // 籃球黑線
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
+                ctx.lineWidth = 2 * this.scale;
+                ctx.shadowBlur = 0;
+
+                ctx.beginPath();
+                ctx.moveTo(this.x - this.radius, this.y); ctx.lineTo(this.x + this.radius, this.y);
+                ctx.moveTo(this.x, this.y - this.radius); ctx.lineTo(this.x, this.y + this.radius);
+                ctx.stroke();
+
+                // 側邊弧線
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.radius * 0.65, 0, Math.PI, true); ctx.stroke();
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.radius * 0.65, 0, Math.PI, false); ctx.stroke();
+
+                ctx.restore();
+            }
+
+            handleScore() {
+                score++;
+                scoreEl.innerText = score;
+                
+                scoreBoardEl.classList.add('score-bounce');
+                setTimeout(() => scoreBoardEl.classList.remove('score-bounce'), 250);
+
+                // 爆發霓虹粒子
+                for (let i = 0; i < 35; i++) {
+                    particles.push(new Particle(hoop.x, hoop.y, '#00f2fe'));
+                }
+            }
+        }
+
+        // 3. 進球炫彩粒子
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.radius = Math.random() * 4 + 1;
+                this.vx = (Math.random() - 0.5) * 14;
+                this.vy = (Math.random() - 0.6) * 12; // 稍微向上噴發
+                this.alpha = 1;
+                this.decay = Math.random() * 0.025 + 0.02;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += 0.2;
+                this.alpha -= this.decay;
+            }
+            draw() {
+                if (this.alpha <= 0) return;
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.shadowColor = this.color;
+                ctx.shadowBlur = 10;
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // --- 初始化實例 ---
+        const hoop = new Hoop();
+        let ball = new Ball();
+        resize();
+        window.addEventListener('resize', resize);
+
+        // --- 核心遊戲動態渲染迴圈 ---
+        function gameLoop() {
+            // 背景底色
+            ctx.fillStyle = '#060913';
+            ctx.fillRect(0, 0, width, height);
+
+            // 繪製現代感立體球場線條（背景動態感）
+            ctx.strokeStyle = 'rgba(79, 172, 254, 0.04)';
+            ctx.lineWidth = 2;
+            for(let i = 0; i <= width; i += width/8) {
+                ctx.beginPath();
+                ctx.moveTo(i, height);
+                ctx.lineTo(width/2 + (i - width/2)*0.2, hoop.y); // 匯聚透視線
+                ctx.stroke();
+            }
+
+            // 繪製遊戲物件
+            hoop.draw();
+            
+            // 繪製滑動時的淡藍色導引線
+            if (isDragging && !ball.isFlying) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(ball.x, ball.y);
+                ctx.lineTo(swipeStart.x, swipeStart.y);
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = 'rgba(0, 242, 254, 0.25)';
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            ball.update();
+            ball.draw();
+
+            // 更新粒子
+            particles = particles.filter(p => p.alpha > 0);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // --- 全新滑動推進 (Flick / Swipe) 操控邏輯 ---
+
+        function handleStart(clientX, clientY) {
+            if (ball.isFlying) return;
+
+            // 檢查是否點擊在球的範圍內（置中球）
+            let dist = Math.hypot(clientX - ball.x, clientY - ball.y);
+            if (dist < ball.radius * 1.5) {
+                isDragging = true;
+                swipeStart.x = clientX;
+                swipeStart.y = clientY;
+                swipeStart.time = performance.now();
+                document.getElementById('hint').style.display = 'none';
+            }
+        }
+
+        function handleMove(clientX, clientY) {
+            if (!isDragging || ball.isFlying) return;
+            
+            // 讓球隨著手指/滑鼠移動，增加跟手感
+            ball.x = clientX;
+            ball.y = clientY;
+        }
+
+        function handleEnd(clientX, clientY) {
+            if (!isDragging || ball.isFlying) return;
+            isDragging = false;
+
+            let endTime = performance.now();
+            let duration = endTime - swipeStart.time;
+
+            // 計算滑動距離與時間差（速度 = 距離 / 時間）
+            let diffX = clientX - swipeStart.x;
+            let diffY = clientY - swipeStart.y;
+
+            // 確保是「向上推」才觸發投籃
+            if (diffY < -30 && duration > 10) {
+                // 根據滑動速度計算初速度，加上適當權重
+                let speedMultiplier = 1.3;
+                ball.vx = (diffX / duration) * 15 * speedMultiplier;
+                ball.vy = (diffY / duration) * 25 * speedMultiplier; // 向上衝的力量
+
+                // 限制投籃力量範圍，避免飛太誇張
+                ball.vx = Math.max(-10, Math.min(10, ball.vx));
+                ball.vy = Math.max(-26, Math.min(-14, ball.vy));
+
+                ball.isFlying = true;
+            } else {
+                // 如果只是亂點或往下抓，球彈回原位
+                ball.reset();
+            }
+        }
+
+        // 滑鼠監聽
+        canvas.addEventListener('mousedown', e => handleStart(e.clientX, e.clientY));
+        window.addEventListener('mousemove', e => handleMove(e.clientX, e.clientY));
+        window.addEventListener('mouseup', e => handleEnd(e.clientX, e.clientY));
+
+        // 手機觸控監聽
+        canvas.addEventListener('touchstart', e => {
+            handleStart(e.touches[0].clientX, e.touches[0].clientY);
+        });
+        canvas.addEventListener('touchmove', e => {
+            handleMove(e.touches[0].clientX, e.touches[0].clientY);
+        });
+        canvas.addEventListener('touchend', e => {
+            handleEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+        });
+
+        // 啟動
+        gameLoop();
+    </script>
+</body>
+</html>
