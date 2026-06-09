@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>超級長輩風 🌸 早安圖產生器</title>
+    <style>
+        :root {
+            --primary-color: #ff4757;
+            --bg-color: #f1f2f6;
+        }
+
+        body {
+            font-family: "Microsoft JhengHei", sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: #2f3542;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: row;
+            gap: 30px;
+            max-width: 1000px;
+            background: white;
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+        }
+
+        /* 左側：預覽畫布 */
+        .preview-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        canvas {
+            border: 3px solid #2f3542;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* 右側：控制面板 */
+        .control-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            min-width: 320px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-weight: bold;
+            color: #57606f;
+        }
+
+        textarea {
+            width: 100%;
+            height: 80px;
+            padding: 10px;
+            box-sizing: border-box;
+            border: 2px solid #ced6e0;
+            border-radius: 8px;
+            font-size: 16px;
+            resize: none;
+        }
+
+        .btn-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        button {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary {
+            background-color: #2ed573;
+            color: white;
+        }
+
+        .btn-secondary:hover { background-color: #26af5f; }
+
+        .btn-random {
+            background-color: #ffa502;
+            color: white;
+        }
+
+        .btn-random:hover { background-color: #e69500; }
+
+        .btn-main {
+            background-color: var(--primary-color);
+            color: white;
+            grid-column: span 2;
+            font-size: 18px;
+            margin-top: 10px;
+        }
+
+        .btn-main:hover { background-color: #ff6b81; }
+
+        input[type="color"] {
+            width: 100%;
+            height: 40px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        select, input[type="file"] {
+            padding: 10px;
+            border: 2px solid #ced6e0;
+            border-radius: 8px;
+            background: white;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🌸 超級早安長輩圖產生器 🌸</h1>
+
+    <div class="container">
+        <div class="preview-area">
+            <canvas id="memeCanvas" width="600" height="600"></canvas>
+        </div>
+
+        <div class="control-panel">
+            <div class="control-group">
+                <label>1. 選擇背景圖片</label>
+                <input type="file" id="imageLoader" accept="image/*">
+                <select id="defaultBg">
+                    <option value="gradient1">🌅 預設風光：晨曦極光</option>
+                    <option value="gradient2">🌺 預設風光：富貴荷花紅</option>
+                    <option value="gradient3">森林綠意</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>2. 輸入長輩金句</label>
+                <textarea id="textInput">早安！&#10;平安喜樂，福氣滿滿。&#10;認同請分享！ 👍</textarea>
+                <div class="btn-row">
+                    <button class="btn-random" id="btnRandomClassic">🎲 經典正能量</button>
+                    <button class="btn-random" id="btnRandomMeme" style="background-color: #1e90ff;">🤪 年輕人毒舌</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>3. 字體與特效設定</label>
+                <select id="fontFamily">
+                    <option value="DFKai-SB, BiauKai, sans-serif">正宗標楷體 (推薦)</option>
+                    <option value="'PMingLiU', 'New MingLiU', serif">復古新細明體</option>
+                    <option value="'Microsoft JhengHei', sans-serif">微軟正黑體</option>
+                </select>
+            </div>
+
+            <div class="btn-row">
+                <div class="control-group">
+                    <label>字體顏色</label>
+                    <input type="color" id="textColor" value="#ffff00"> </div>
+                <div class="control-group">
+                    <label>邊框顏色</label>
+                    <input type="color" id="strokeColor" value="#ff0000"> </div>
+            </div>
+
+            <button class="btn-main" id="btnDownload">💾 下載長輩圖發至 LINE</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('memeCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // DOM 元素
+        const textInput = document.getElementById('textInput');
+        const imageLoader = document.getElementById('imageLoader');
+        const defaultBg = document.getElementById('defaultBg');
+        const fontFamily = document.getElementById('fontFamily');
+        const textColor = document.getElementById('textColor');
+        const strokeColor = document.getElementById('strokeColor');
+        const btnDownload = document.getElementById('btnDownload');
+        const btnRandomClassic = document.getElementById('btnRandomClassic');
+        const btnRandomMeme = document.getElementById('btnRandomMeme');
+
+        let userImage = null;
+
+        // 語錄資料庫
+        const classicQuotes = [
+            "早安！\n知足常樂，健康是財富。\n認同請分享！👍",
+            "平安喜樂！\n新的一天，從微笑開始。\n祝好友們順心如意。☕",
+            "功德圓滿，福氣臨門！\n祝您事事順心，天天開心！🌸",
+            "早安朋友！\n送你一份清晨的祝福，\n願你健康平安、萬事如意！✨"
+        ];
+
+        const memeQuotes = [
+            "早安！\n再堅持一下，\n中午就可以睡午覺了。🙃",
+            "今天也是充滿希望的一天——\n希望很快就能下班。☀️",
+            "錢不是萬能的，\n有時候也是九千能。\n早安，打工人！💪",
+            "早安！\n歲月靜好，\n是因為有人幫你付房租。🏠"
+        ];
+
+        // 初始化
+        window.onload = function() {
+            drawMeme();
+            
+            // 監聽所有輸入元件，即時更新預覽
+            textInput.addEventListener('input', drawMeme);
+            fontFamily.addEventListener('change', drawMeme);
+            textColor.addEventListener('change', drawMeme);
+            strokeColor.addEventListener('change', drawMeme);
+            defaultBg.addEventListener('change', () => {
+                userImage = null; // 切換回預設背景時清除上傳的圖
+                imageLoader.value = ''; 
+                drawMeme();
+            });
+
+            // 處理上傳圖片
+            imageLoader.addEventListener('change', function(e) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.onload = function() {
+                        userImage = img;
+                        drawMeme();
+                    }
+                    img.src = event.target.result;
+                }
+                reader.readAsDataURL(e.target.files[0]);
+            });
+
+            // 隨機語錄按鈕
+            btnRandomClassic.addEventListener('click', () => {
+                textInput.value = classicQuotes[Math.floor(Math.random() * classicQuotes.length)];
+                drawMeme();
+            });
+
+            btnRandomMeme.addEventListener('click', () => {
+                textInput.value = memeQuotes[Math.floor(Math.random() * memeQuotes.length)];
+                drawMeme();
+            });
+
+            // 下載功能
+            btnDownload.addEventListener('click', () => {
+                const link = document.createElement('a');
+                link.download = 'good_morning_' + Date.now() + '.png';
+                link.href = canvas.toDataURL();
+                link.click();
+            });
+        };
+
+        // 繪製核心邏輯
+        function drawMeme() {
+            // 1. 繪製背景
+            if (userImage) {
+                // 讓使用者上傳的圖片完美填滿畫布 (Cover 效果)
+                const scale = Math.max(canvas.width / userImage.width, canvas.height / userImage.height);
+                const x = (canvas.width / 2) - (userImage.width / 2) * scale;
+                const y = (canvas.height / 2) - (userImage.height / 2) * scale;
+                ctx.drawImage(userImage, x, y, userImage.width * scale, userImage.height * scale);
+            } else {
+                // 預設漸層背景（長輩最愛的金光或高飽和顏色）
+                let grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+                if (defaultBg.value === 'gradient1') {
+                    grad.addColorStop(0, '#ff7f50');
+                    grad.addColorStop(0.5, '#ff6b81');
+                    grad.addColorStop(1, '#a4b0be');
+                } else if (defaultBg.value === 'gradient2') {
+                    grad.addColorStop(0, '#ff4757');
+                    grad.addColorStop(0.6, '#ff6b81');
+                    grad.addColorStop(1, '#ffa502');
+                } else {
+                    grad.addColorStop(0, '#2ed573');
+                    grad.addColorStop(1, '#1e90ff');
+                }
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
+            // 2. 設置字體樣式（長輩圖精髓：字要大、要有粗邊框）
+            const lines = textInput.value.split('\n');
+            const baseFontSize = 42; 
+            ctx.font = `bold ${baseFontSize}px ${fontFamily.value}`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // 計算文字整體高度，好讓它垂直置中
+            const lineHeight = baseFontSize * 1.4;
+            const totalHeight = lines.length * lineHeight;
+            let startY = (canvas.height - totalHeight) / 2 + lineHeight / 2;
+
+            // 3. 逐行繪製文字
+            lines.forEach((line, index) => {
+                const currentY = startY + (index * lineHeight);
+                
+                // 繪製超粗邊框（長輩圖靈魂：黑邊、紅邊才看得清）
+                ctx.strokeStyle = strokeColor.value;
+                ctx.lineWidth = 10;
+                ctx.lineJoin = 'round';
+                ctx.strokeText(line, canvas.width / 2, currentY);
+
+                // 填入主要顏色
+                ctx.fillStyle = textColor.value;
+                ctx.fillText(line, canvas.width / 2, currentY);
+            });
+        }
+    </script>
+</body>
+</html>
