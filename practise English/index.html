@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sleek English | A2 克漏字極致修練</title>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            --card-bg: #ffffff;
+            --primary: #4a6fa5;
+            --primary-light: #edf2f7;
+            --success: #2ec4b6;
+            --success-light: #e6f9f7;
+            --error: #e63946;
+            --error-light: #fdf2f2;
+            --text-main: #2d3748;
+            --text-sub: #718096;
+            --border: #e2e8f0;
+            --radius: 16px;
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Microsoft JhengHei", sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            min-height: 100vh;
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-sizing: border-box;
+        }
+
+        .app-container {
+            max-width: 700px;
+            width: 100%;
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
+            padding: 40px;
+            box-sizing: border-box;
+            transition: var(--transition);
+        }
+
+        /* 標頭與進度條 */
+        header {
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin: 0 0 10px 0;
+            letter-spacing: -0.5px;
+            background: linear-gradient(90deg, #4a6fa5, #133c55);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .level-badge {
+            display: inline-block;
+            background: var(--primary-light);
+            color: var(--primary);
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 50px;
+            margin-bottom: 15px;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 6px;
+            background: var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 15px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: var(--primary);
+            transition: width 0.4s ease;
+        }
+
+        /* 文章與克漏字下拉選單核心設計 */
+        .passage-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .passage-box {
+            font-size: 1.15rem;
+            line-height: 2.2;
+            color: var(--text-main);
+            text-align: justify;
+            background: #f8fafc;
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            margin-bottom: 30px;
+        }
+
+        /* 內嵌下拉選單俐落美化 */
+        .cloze-select {
+            appearance: none;
+            -webkit-appearance: none;
+            background-color: #fff;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 4px 30px 4px 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--primary);
+            cursor: pointer;
+            transition: var(--transition);
+            margin: 0 4px;
+            display: inline-block;
+            vertical-align: middle;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%234a6fa5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            background-size: 14px;
+        }
+
+        .cloze-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(74, 111, 165, 0.15);
+        }
+
+        /* 回饋動態樣式 */
+        .cloze-select.correct {
+            border-color: var(--success);
+            background-color: var(--success-light);
+            color: var(--success);
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%232ec4b6' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E");
+        }
+
+        .cloze-select.incorrect {
+            border-color: var(--error);
+            background-color: var(--error-light);
+            color: var(--error);
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23e63946' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='18' y1='6' x2='6' y2='18'%3E%3C/line%3E%3Cline x1='6' y1='6' x2='18' y2='18'%3E%3C/line%3E%3C/svg%3E");
+        }
+
+        /* 動作按鈕 */
+        .btn-action {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 4px 12px rgba(74, 111, 165, 0.2);
+        }
+
+        .btn-action:hover {
+            background: #3b5984;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(74, 111, 165, 0.3);
+        }
+
+        .btn-action:active {
+            transform: translateY(0);
+        }
+
+        /* 解析面板設計 */
+        .explanation-panel {
+            margin-top: 35px;
+            border-top: 2px dashed var(--border);
+            padding-top: 25px;
+            display: none;
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .exp-item {
+            margin-bottom: 18px;
+            padding: 15px;
+            border-radius: 8px;
+            background: #f8fafc;
+            border-left: 4px solid var(--primary);
+        }
+
+        .exp-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+            color: var(--primary);
+        }
+
+        .exp-text {
+            font-size: 0.9rem;
+            color: var(--text-sub);
+            line-height: 1.5;
+        }
+
+        .score-display {
+            font-size: 1.5rem;
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <header>
+            <span class="level-badge">CEFR A2 Level</span>
+            <h1 id="mainTitle">Sleek English Cloze</h1>
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+        </header>
+
+        <main>
+            <div class="passage-title" id="passageTitle">
+                </div>
+            
+            <div class="passage-box" id="passageContent">
+                </div>
+
+            <button class="btn-action" id="actionBtn" onclick="checkAnswers()">檢查答案 Check Answers</button>
+
+            <div class="explanation-panel" id="explanationPanel">
+                <div class="score-display" id="scoreDisplay"></div>
+                <h3 style="margin-bottom: 15px;">💡 核心文法解析 Explanations</h3>
+                <div id="explanationList"></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // --- 題目資料庫 (CEFR A2 程度) ---
+        const quizData = [
+            {
+                title: "🎵 Task 1: A Weekend Trip (週末旅行)",
+                // 使用 {blank0}, {blank1} 等作為預留位置
+                text: "Last weekend, my family and I {blank0} to the beach. The weather {blank1} perfect, so we swam in the sea all morning. In the afternoon, my brother and I {blank2} a big sandcastle. My parents just sat {blank3} a big umbrella and read books. We had {blank4} wonderful time together.",
+                blanks: [
+                    {
+                        options: ["go", "went", "going", "goes"],
+                        correct: "went",
+                        explanation: "由句首的「Last weekend（上週末）」可知全篇敘述過去發生的事，故動詞需選用過去式 went。"
+                    },
+                    {
+                        options: ["is", "was", "are", "were"],
+                        correct: "was",
+                        explanation: "主詞「The weather（天氣）」為不可數名詞，視為單數；承接過去時態，故 be 動詞選用 was。"
+                    },
+                    {
+                        options: ["made", "did", "thought", "played"],
+                        correct: "made",
+                        explanation: "考習慣搭配詞。英文中「堆沙堡」固定使用搭配動詞 make，過去式即為 made。"
+                    },
+                    {
+                        options: ["on", "under", "through", "between"],
+                        correct: "under",
+                        explanation: "考地方介系詞。坐在大遮陽傘的「下面」，故選 under 最符合邏輯。"
+                    },
+                    {
+                        options: ["an", "a", "the", "X"],
+                        correct: "a",
+                        explanation: "考固定片語。「度過美好時光」固定說法為 have a wonderful time。wonderful 為子音開頭，故冠詞用 a。"
+                    }
+                ]
+            },
+            {
+                title: "🎉 Task 2: Preparing for a Party (準備派對)",
+                text: "Tomorrow is my sister's birthday, and we are {blank0} a surprise party for her. Right now, my mother is baking a delicious chocolate cake {blank1} the kitchen. I {blank2} clean the living room before the guests arrive at 6:00 PM. I am a bit busy, {blank3} I am very excited. I think my sister {blank4} love the party!",
+                blanks: [
+                    {
+                        options: ["planning", "planned", "plan", "plans"],
+                        correct: "planning",
+                        explanation: "前面有 be 動詞 are，此處考「be + V-ing」的現在進行式（此處表示即將發生的未來規劃），選 planning。"
+                    },
+                    {
+                        options: ["at", "in", "on", "next"],
+                        correct: "in",
+                        explanation: "考空間介系詞。在廚房這個立體空間「裡面」，標準用法是 in the kitchen。"
+                    },
+                    {
+                        options: ["must", "can", "may", "should"],
+                        correct: "must",
+                        explanation: "考情態助動詞。根據語境「在客人來之前，我『必須』打掃好客廳」，帶有強烈的必要性，選 must 最貼切。"
+                    },
+                    {
+                        options: ["because", "so", "but", "or"],
+                        correct: "but",
+                        explanation: "考連接詞。「我很忙」與「我很興奮」前後語意呈現對比與轉折關係，因此選 but（但是）。"
+                    },
+                    {
+                        options: ["did", "is", "will", "was"],
+                        correct: "will",
+                        explanation: "考未來時態。第一句提到 Tomorrow（明天），後半句表達主觀的未來預測「我想我妹妹『將會』很喜歡」，故選 will。"
+                    }
+                ]
+            }
+        ];
+
+        let currentPassage = 0;
+        let isSubmitted = false;
+
+        // --- 初始化頁面 ---
+        function initQuiz() {
+            isSubmitted = false;
+            const data = quizData[currentPassage];
+            
+            // 設定標題
+            document.getElementById('passageTitle').innerText = data.title;
+            
+            // 隱藏解析面板、重置按鈕
+            document.getElementById('explanationPanel').style.display = "none";
+            const actionBtn = document.getElementById('actionBtn');
+            actionBtn.innerText = "檢查答案 Check Answers";
+            
+            // 建立文章內容並動態注入 select 選單
+            let renderedText = data.text;
+            data.blanks.forEach((blank, index) => {
+                let selectHtml = `<select class="cloze-select" id="blank-${index}" onchange="updateProgress()">`;
+                selectHtml += `<option value="" disabled selected>?</option>`;
+                blank.options.forEach(opt => {
+                    selectHtml += `<option value="${opt}">${opt}</option>`;
+                });
+                selectHtml += `</select>`;
+                
+                renderedText = renderedText.replace(`{blank-${index}}`, selectHtml); // 防止字串取代錯誤，下面精準處理
+            });
+
+            // 精準替換對應的預留位置
+            let finalHtml = data.text;
+            for(let i = 0; i < data.blanks.length; i++) {
+                let selectHtml = `<select class="cloze-select" id="blank-${i}" onchange="updateProgress()">`;
+                selectHtml += `<option value="" disabled selected>___</option>`;
+                data.blanks[i].options.forEach(opt => {
+                    selectHtml += `<option value="${opt}">${opt}</option>`;
+                });
+                selectHtml += `</select>`;
+                finalHtml = finalHtml.replace(`{blank-${i}}`, selectHtml);
+            }
+            // 由於資料結構是 {blank0} 而不是 {blank-0}，修正取代邏輯：
+            let correctedHtml = data.text;
+            data.blanks.forEach((blank, i) => {
+                let selectHtml = `<select class="cloze-select" id="blank-${i}" onchange="updateProgress()">`;
+                selectHtml += `<option value="" disabled selected>品</option>`; // 用小方塊或底線代替
+                selectHtml += `<option value="" disabled selected>選擇</option>`;
+                blank.options.forEach(opt => {
+                    selectHtml += `<option value="${opt}">${opt}</option>`;
+                });
+                selectHtml += `</select>`;
+                correctedHtml = correctedHtml.replace(`{blank${i}}`, selectHtml);
+            });
+            
+            document.getElementById('passageContent').innerHTML = correctedHtml;
+            updateProgress();
+        }
+
+        // --- 動態更新進度條 ---
+        function updateProgress() {
+            if (isSubmitted) return;
+            const data = quizData[currentPassage];
+            let answeredCount = 0;
+            
+            for (let i = 0; i < data.blanks.length; i++) {
+                const select = document.getElementById(`blank-${i}`);
+                if (select && select.value !== "") {
+                    answeredCount++;
+                }
+            }
+            
+            const percent = (answeredCount / data.blanks.length) * 100;
+            document.getElementById('progressBar').style.width = `${percent}%`;
+        }
+
+        // --- 檢查答案與反饋邏輯 ---
+        function checkAnswers() {
+            const actionBtn = document.getElementById('actionBtn');
+            
+            // 如果已經提交過，此按鈕功能變更為「下一關」或「重新開始」
+            if (isSubmitted) {
+                if (currentPassage < quizData.length - 1) {
+                    currentPassage++;
+                    initQuiz();
+                } else {
+                    currentPassage = 0; // 循環回去
+                    initQuiz();
+                }
+                return;
+            }
+
+            const data = quizData[currentPassage];
+            let score = 0;
+            let allAnswered = true;
+
+            // 檢查是否所有題目都選了
+            for (let i = 0; i < data.blanks.length; i++) {
+                const select = document.getElementById(`blank-${i}`);
+                if (select.value === "") {
+                    allAnswered = false;
+                    break;
+                }
+            }
+
+            if (!allAnswered) {
+                alert("請填寫所有空格後再進行檢查喔！ Please fill in all blanks.");
+                return;
+            }
+
+            isSubmitted = true;
+            let explanationHtml = "";
+
+            // 比對答案並渲染動態特效
+            data.blanks.forEach((blank, i) => {
+                const select = document.getElementById(`blank-${i}`);
+                select.disabled = true; // 鎖定選單
+                
+                if (select.value === blank.correct) {
+                    score++;
+                    select.classList.add('correct');
+                } else {
+                    select.classList.add('incorrect');
+                }
+
+                // 產生解析內容
+                explanationHtml += `
+                    <div class="exp-item" style="border-left-color: ${select.value === blank.correct ? 'var(--success)' : 'var(--error)'}">
+                        <div class="exp-title">第 (${i+1}) 題：正確答案為「${blank.correct}」 
+                            ${select.value === blank.correct ? '✅ 正確' : '❌ 您的選擇: ' + select.value}
+                        </div>
+                        <div class="exp-text">${blank.explanation}</div>
+                    </div>
+                `;
+            });
+
+            // 顯示分數與解析面板
+            const scoreDisplay = document.getElementById('scoreDisplay');
+            scoreDisplay.innerHTML = `得分 Score: <span style="font-size: 2rem; color: var(--success)">${score}</span> / ${data.blanks.length}`;
+            
+            document.getElementById('explanationList').innerHTML = explanationHtml;
+            document.getElementById('explanationPanel').style.display = "block";
+
+            // 滾動到解析畫面
+            document.getElementById('explanationPanel').scrollIntoView({ behavior: 'smooth' });
+
+            // 變更按鈕文本
+            if (currentPassage < quizData.length - 1) {
+                actionBtn.innerText = "下一篇下一關 Next Passage ➡️";
+            } else {
+                actionBtn.innerText = "重新挑戰 Restart Quiz 🔄";
+            }
+        }
+
+        // 頁面載入完成後自動初始化
+        window.onload = initQuiz;
+    </script>
+</body>
+</html>

@@ -2,491 +2,593 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GMorning Modern Art | 先進早安圖產生器</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ultimate Creative Hub | 三合一完全體大廳</title>
     <style>
-        /* --- 1. 全域變數與重設 (更乾淨俐落的基礎) --- */
-        :root {
-            --primary-gradient: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%); /* 活力藍漸層 */
-            --secondary-gradient: linear-gradient(135deg, #ff0844 0%, #ffb199 100%); /* 毒舌橘漸層 */
-            --bg-color: #0d1117; /* 深色背景 */
-            --text-main: #f0f6fc;
-            --text-sub: #8b949e;
-            --glass-bg: rgba(255, 255, 255, 0.05); /* 玻璃擬態背景 */
-            --glass-border: rgba(255, 255, 255, 0.1);
-            --neon-accent: #00f2fe;
-            --font-family-ui: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, "Microsoft JhengHei";
-            --ease: cubic-bezier(0.23, 1, 0.32, 1); /* 平滑動態 */
-        }
-
-        body {
-            font-family: var(--font-family-ui);
-            background-color: var(--bg-color);
-            color: var(--text-main);
+        /* --- 全局基礎設定 --- */
+        body, html {
             margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
+            padding: 0;
+            width: 100%;
+            height: 100%;
             overflow-x: hidden;
-            position: relative;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #0b0f19;
         }
 
-        /* --- 2. 動態漸層背景 --- */
-        body::before {
-            content: '';
-            position: fixed;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle at 10% 10%, rgba(79, 172, 254, 0.15) 0%, transparent 40%),
-                        radial-gradient(circle at 90% 90%, rgba(255, 8, 68, 0.1) 0%, transparent 40%);
-            animation: bgAnimation 20s infinite alternate linear;
-            z-index: -1;
-        }
-
-        @keyframes bgAnimation {
-            0% { transform: translate(0, 0) rotate(0deg); }
-            100% { transform: translate(-5%, -5%) rotate(5deg); }
-        }
-
-        /* --- 3. 標題設計 (乾淨、現代) --- */
-        h1 {
-            font-size: 2.5rem;
-            font-weight: 800;
-            margin-bottom: 5px;
-            background: var(--primary-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-align: center;
-            letter-spacing: -1px;
-        }
-
-        .subtitle {
-            color: var(--text-sub);
-            font-size: 1rem;
-            margin-bottom: 40px;
-            text-align: center;
-            font-weight: 300;
-        }
-
-        /* --- 4. 主容器 (玻璃擬態、中央佈局) --- */
-        .container {
-            display: flex;
-            flex-direction: column;
-            gap: 30px;
-            max-width: 650px; /* 緊湊佈局 */
+        /* 視圖切換核心 */
+        .view-section {
+            display: none;
             width: 100%;
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            padding: 40px;
-            border-radius: 24px;
-            border: 1px solid var(--glass-border);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-            transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease);
-        }
-
-        .container:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
-        }
-
-        /* --- 5. 預覽區域 (像展示藝術品) --- */
-        .preview-area {
-            display: flex;
-            justify-content: center;
-            position: relative;
-        }
-
-        canvas {
-            border-radius: 16px;
-            max-width: 100%;
-            height: auto;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            transition: transform 0.3s var(--ease);
-            border: 1px solid var(--glass-border);
-        }
-
-        /* --- 6. 控制面板 (設計感核心) --- */
-        .control-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .control-group {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        /* 標籤設計 */
-        label {
-            font-weight: 600;
-            color: var(--text-main);
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            opacity: 0.8;
-        }
-
-        /* 統一的現代輸入框樣式 */
-        textarea, select, input[type="file"] {
-            width: 100%;
-            padding: 15px;
+            min-height: 100vh;
             box-sizing: border-box;
-            background: rgba(0, 0, 0, 0.2);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            font-size: 1rem;
-            color: var(--text-main);
-            font-family: var(--font-family-ui);
-            transition: all 0.3s var(--ease);
-        }
-
-        textarea:focus, select:focus, input[type="file"]:focus {
-            outline: none;
-            border-color: var(--neon-accent);
-            box-shadow: 0 0 10px rgba(0, 242, 254, 0.3);
-            background: rgba(0, 0, 0, 0.3);
-        }
-
-        textarea {
-            height: 100px;
-            resize: none;
-            line-height: 1.5;
-        }
-
-        /* 檔案上傳按鈕美化 */
-        input[type="file"] {
-            padding: 12px;
-            font-size: 0.9rem;
-            cursor: pointer;
-        }
-        input[type="file"]::file-selector-button {
-            background: var(--glass-bg);
-            color: var(--text-main);
-            border: 1px solid var(--glass-border);
-            border-radius: 8px;
-            padding: 5px 10px;
-            margin-right: 10px;
-            transition: all 0.3s var(--ease);
-        }
-        input[type="file"]:hover::file-selector-button {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        /* --- 7. 按鈕設計 (動態、年輕化) --- */
-        .btn-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
-
-        button {
-            padding: 15px;
-            border: none;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s var(--ease);
             position: relative;
-            overflow: hidden;
+        }
+        .view-section.active {
+            display: flex;
+        }
+
+        /* 通用返回大廳按鈕 */
+        .back-to-hub-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 9999;
+            padding: 10px 18px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 8px;
+            gap: 6px;
         }
-
-        /* 按鈕點擊漣漪效果 */
-        button::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 100px;
-            height: 100px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 50%;
-            transform: translate(-50%, -50%) scale(0);
-            opacity: 0;
-            transition: transform 0.5s, opacity 1s;
-        }
-        button:active::after {
-            transform: translate(-50%, -50%) scale(4);
-            opacity: 1;
-            transition: 0s;
-        }
-
-        /* 🎲 按鈕樣式 */
-        .btn-random {
-            background: var(--glass-bg);
-            color: var(--text-main);
-            border: 1px solid var(--glass-border);
-        }
-        .btn-random:hover {
-            background: rgba(255, 255, 255, 0.1);
+        .back-to-hub-btn:hover {
+            background: #fff;
+            color: #0b0f19;
             transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255,255,255,0.2);
         }
 
-        /* 💾 下載按鈕樣式 (主動態按鈕) */
-        .btn-main {
-            background: var(--primary-gradient);
-            color: #fff;
-            grid-column: span 2;
-            font-size: 1.1rem;
-            margin-top: 15px;
-            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.3);
+        /* ==========================================================================
+           1. 項目主大廳 (HUB VIEW) 樣式
+           ========================================================================== */
+        #hub-view {
+            background-color: #0b0f19;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(0, 242, 254, 0.05) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(255, 0, 85, 0.05) 0px, transparent 50%);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
         }
-        .btn-main:hover {
-            box-shadow: 0 8px 25px rgba(79, 172, 254, 0.5);
-            transform: translateY(-3px) scale(1.02);
+        .hub-container { max-width: 1100px; width: 100%; text-align: center; }
+        .hub-header { margin-bottom: 50px; }
+        .hub-header h1 {
+            font-size: 2.5rem; font-weight: 800; margin: 0 0 10px 0; letter-spacing: -1px;
+            background: linear-gradient(135deg, #ffffff 30%, #8a99ad); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
+        .hub-header p { color: #8a99ad; font-size: 1.1rem; font-weight: 300; margin: 0; }
+        .project-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; width: 100%; }
+        
+        .project-card {
+            background: rgba(23, 28, 48, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px;
+            padding: 35px 25px; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); position: relative; overflow: hidden; transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1); cursor: pointer; box-shadow: 0 15px 35px rgba(0,0,0,0.2); text-decoration: none;
+        }
+        .project-card.card-1:hover { border-color: #ff0055; box-shadow: 0 0 30px rgba(255, 0, 85, 0.25); transform: translateY(-8px); }
+        .project-card.card-2:hover { border-color: #00f2fe; box-shadow: 0 0 30px rgba(0, 242, 254, 0.25); transform: translateY(-8px); }
+        .project-card.card-3:hover { border-color: #9d4edd; box-shadow: 0 0 30px rgba(157, 78, 221, 0.25); transform: translateY(-8px); }
+        
+        .icon-wrapper { font-size: 45px; margin-bottom: 20px; transition: transform 0.3s ease; }
+        .project-card:hover .icon-wrapper { transform: scale(1.15) rotate(5deg); }
+        .project-card h2 { font-size: 1.4rem; margin: 0 0 10px 0; font-weight: 700; }
+        .project-card p { color: #8a99ad; font-size: 0.9rem; line-height: 1.6; margin: 0 0 25px 0; }
+        .enter-btn { padding: 10px 24px; border-radius: 50px; font-size: 0.85rem; font-weight: 600; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #fff; transition: all 0.4s; }
+        .card-1:hover .enter-btn { background: #ff0055; box-shadow: 0 0 15px #ff0055; border-color: #ff0055; }
+        .card-2:hover .enter-btn { background: #00f2fe; color: #0b0f19; box-shadow: 0 0 15px #00f2fe; border-color: #00f2fe; }
+        .card-3:hover .enter-btn { background: #9d4edd; box-shadow: 0 0 15px #9d4edd; border-color: #9d4edd; }
 
-        /* --- 8. 樣式調整 (精細化) --- */
-        .style-row {
-            display: grid;
-            grid-template-columns: 2fr 1fr 1fr;
-            gap: 15px;
-            align-items: end;
-        }
+        /* ==========================================================================
+           2. 街頭投籃機 (BASKETBALL VIEW) 樣式
+           ========================================================================== */
+        #basketball-view { background-color: #060913; overflow: hidden; }
+        #gameCanvas { display: block; touch-action: none; width: 100%; height: 100%; }
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; align-items: center; padding-top: 25px; box-sizing: border-box; }
+        .score-container { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 12px 35px; border-radius: 50px; border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 30px rgba(0, 242, 254, 0.15); text-align: center; transition: transform 0.2s; }
+        .score-label { font-size: 11px; text-transform: uppercase; letter-spacing: 3px; color: #4facfe; margin-bottom: 2px; }
+        #score { font-size: 54px; font-weight: 900; background: linear-gradient(135deg, #00f2fe, #4facfe); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 15px rgba(0, 242, 254, 0.6)); }
+        .score-bounce { transform: scale(1.15) rotate(2deg); }
+        #hint { position: absolute; bottom: 18%; font-size: 15px; color: rgba(255, 255, 255, 0.4); animation: pulse 2s infinite; font-weight: 300; }
 
-        /* 顏色選擇器美化 */
-        input[type="color"] {
-            -webkit-appearance: none;
-            border: none;
-            width: 100%;
-            height: 52px; /* 與 select 高度一致 */
-            border-radius: 12px;
-            background: transparent;
-            cursor: pointer;
-            padding: 0;
+        /* ==========================================================================
+           3. 英文克漏字 (CLOZE VIEW) 樣式
+           ========================================================================== */
+        #cloze-view {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            flex-direction: column; align-items: center; justify-content: flex-start; padding: 70px 20px 40px 20px; overflow-y: auto;
         }
-        input[type="color"]::-webkit-color-swatch-wrapper {
-            padding: 0;
+        .app-container { max-width: 700px; width: 100%; background: #ffffff; border-radius: 16px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05); padding: 40px; box-sizing: border-box; }
+        .cloze-header { margin-bottom: 30px; text-align: left; }
+        .cloze-header h1 { font-size: 1.8rem; font-weight: 800; margin: 0 0 10px 0; background: linear-gradient(90deg, #4a6fa5, #133c55); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .level-badge { display: inline-block; background: #edf2f7; color: #4a6fa5; font-size: 0.75rem; font-weight: 700; padding: 4px 12px; border-radius: 50px; margin-bottom: 15px; }
+        .progress-container { width: 100%; height: 6px; background: #e2e8f0; border-radius: 10px; overflow: hidden; margin-top: 15px; }
+        .progress-bar { height: 100%; width: 0%; background: #4a6fa5; transition: width 0.4s ease; }
+        .passage-title { font-size: 1.25rem; font-weight: 700; color: #2d3748; margin-bottom: 20px; text-align: left;}
+        .passage-box { font-size: 1.15rem; line-height: 2.2; color: #2d3748; text-align: justify; background: #f8fafc; padding: 25px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 30px; }
+        
+        .cloze-select {
+            appearance: none; -webkit-appearance: none; background-color: #fff; border: 2px solid #e2e8f0; border-radius: 8px; padding: 4px 30px 4px 12px; font-size: 1rem; font-weight: 600; color: #4a6fa5; cursor: pointer; transition: all 0.3s; margin: 0 4px; display: inline-block; vertical-align: middle;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%234a6fa5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 8px center; background-size: 14px;
         }
-        input[type="color"]::-webkit-color-swatch {
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-        }
+        .cloze-select.correct { border-color: #2ec4b6; background-color: #e6f9f7; color: #2ec4b6; background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%232ec4b6' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E"); }
+        .cloze-select.incorrect { border-color: #e63946; background-color: #fdf2f2; color: #e63946; background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23e63946' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='18' y1='6' x2='6' y2='18'%3E%3C/line%3E%3Cline x1='6' y1='6' x2='18' y2='18'%3E%3C/line%3E%3C/svg%3E"); }
+        
+        .btn-action { display: block; width: 100%; padding: 16px; background: #4a6fa5; color: white; border: none; border-radius: 12px; font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 12px rgba(74, 111, 165, 0.2); }
+        .btn-action:hover { background: #3b5984; transform: translateY(-2px); }
+        
+        .explanation-panel { margin-top: 35px; border-top: 2px dashed #e2e8f0; padding-top: 25px; display: none; text-align: left;}
+        .exp-item { margin-bottom: 18px; padding: 15px; border-radius: 8px; background: #f8fafc; border-left: 4px solid #4a6fa5; }
+        .exp-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; color: #4a6fa5; }
+        .exp-text { font-size: 0.9rem; color: #718096; line-height: 1.5; }
+        .score-display { font-size: 1.5rem; font-weight: 800; text-align: center; margin-bottom: 20px; color: #4a6fa5; }
 
-        @media (max-width: 600px) {
-            .container { padding: 25px; }
-            h1 { font-size: 2rem; }
-            .style-row { grid-template-columns: 1fr; gap: 10px; }
-            input[type="color"] { height: 45px; }
+        /* ==========================================================================
+           4. 早安圖產生器 (MORNING VIEW) 樣式
+           ========================================================================== */
+        #morning-view {
+            background: #0f111a; flex-direction: column; align-items: center; justify-content: flex-start; padding: 70px 20px 40px 20px; overflow-y: auto;
         }
+        .morning-wrapper {
+            max-width: 900px; width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 30px; background: rgba(255,255,255,0.03); padding: 30px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.08); box-sizing: border-box;
+        }
+        @media(max-width: 768px) { .morning-wrapper { grid-template-columns: 1fr; } }
+        .editor-panel { display: flex; flex-direction: column; gap: 15px; text-align: left;}
+        .editor-panel h2 { margin: 0 0 10px 0; font-size: 1.5rem; color: #fff; font-weight: 700; }
+        .input-group { display: flex; flex-direction: column; gap: 6px; }
+        .input-group label { font-size: 0.85rem; color: #8a99ad; font-weight: 600; }
+        .input-group input, .input-group select {
+            padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; font-size: 1rem; outline: none; transition: all 0.3s;
+        }
+        .input-group input:focus, .input-group select:focus { border-color: #9d4edd; }
+        .color-pickers { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .preview-panel { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; }
+        #morningCanvas { background: #000; border-radius: 12px; max-width: 100%; height: auto; box-shadow: 0 15px 35px rgba(0,0,0,0.4); }
+        .btn-download {
+            width: 100%; padding: 14px; background: linear-gradient(135deg, #9d4edd, #7b2cbf); color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 15px rgba(157,78,221,0.3);
+        }
+        .btn-download:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(157,78,221,0.5); }
     </style>
 </head>
 <body>
 
-    <h1>GMorning Modern Art</h1>
-    <div class="subtitle">先進早安圖產生器 | 量子設計版本</div>
-
-    <div class="container">
-        <!-- 畫布預覽區 -->
-        <div class="preview-area">
-            <canvas id="memeCanvas" width="600" height="600"></canvas>
+    <div id="hub-view" class="view-section active">
+        <div class="hub-container">
+            <header class="hub-header">
+                <h1>PROJECT HUB</h1>
+                <p>個人互動網頁作品集 • 三合一終極完全體</p>
+            </header>
+            <div class="project-grid">
+                <div class="project-card card-1" onclick="navigateTo('basketball')">
+                    <div class="icon-wrapper">🏀</div>
+                    <div>
+                        <h2>街頭霓虹投籃機</h2>
+                        <p>正視視角 3D 空間模擬，手勢滑動流暢投籃，快來挑戰最高得分！</p>
+                    </div>
+                    <div class="enter-btn">START GAME</div>
+                </div>
+                <div class="project-card card-2" onclick="navigateTo('cloze')">
+                    <div class="icon-wrapper">📝</div>
+                    <div>
+                        <h2>A2 英文克漏字特訓</h2>
+                        <p>內嵌式沈浸下拉選單，即時反饋動態與精準文法中文化解析面板。</p>
+                    </div>
+                    <div class="enter-btn">START PRACTICE</div>
+                </div>
+                <div class="project-card card-3" onclick="navigateTo('morning')">
+                    <div class="icon-wrapper">🌅</div>
+                    <div>
+                        <h2>長輩風/科技早安圖產生器</h2>
+                        <p>客製化文字、多款酷炫炫彩漸層背景、一鍵高速下載高清分享圖！</p>
+                    </div>
+                    <div class="enter-btn">START GENERATE</div>
+                </div>
+            </div>
         </div>
+    </div>
 
-        <!-- 控制後台 -->
-        <div class="control-panel">
-            <div class="control-group">
-                <label>1. 素材來源</label>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <select id="defaultBg">
-                        <option value="gradient1">🌅 預設：晨曦極光</option>
-                        <option value="gradient2">🌺 預設：富貴荷花紅</option>
-                        <option value="gradient3">🌳 預設：森林綠意</option>
+    <div id="basketball-view" class="view-section">
+        <button class="back-to-hub-btn" onclick="navigateTo('hub')">⬅ 返回大廳</button>
+        <canvas id="gameCanvas"></canvas>
+        <div id="ui-layer">
+            <div class="score-container" id="scoreBoard">
+                <div class="score-label">STREET SCORE</div>
+                <div id="score">0</div>
+            </div>
+            <div id="hint">🏀 輕觸球並向上滑動投籃</div>
+        </div>
+    </div>
+
+    <div id="cloze-view" class="view-section">
+        <button class="back-to-hub-btn" onclick="navigateTo('hub')" style="color: #4a6fa5; border-color: rgba(74,111,165,0.3); background: rgba(74,111,165,0.05)">⬅ 返回大廳</button>
+        <div class="app-container">
+            <header class="cloze-header">
+                <span class="level-badge">CEFR A2 Level</span>
+                <h1>Sleek English Cloze</h1>
+                <div class="progress-container">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+            </header>
+            <main>
+                <div class="passage-title" id="passageTitle"></div>
+                <div class="passage-box" id="passageContent"></div>
+                <button class="btn-action" id="actionBtn" onclick="checkAnswers()">檢查答案 Check Answers</button>
+                <div class="explanation-panel" id="explanationPanel">
+                    <div class="score-display" id="scoreDisplay"></div>
+                    <h3 style="margin-bottom: 15px;">💡 核心文法解析 Explanations</h3>
+                    <div id="explanationList"></div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div id="morning-view" class="view-section">
+        <button class="back-to-hub-btn" onclick="navigateTo('hub')">⬅ 返回大廳</button>
+        <div class="morning-wrapper">
+            <div class="editor-panel">
+                <h2>🌅 早安圖設計面板</h2>
+                <div class="input-group">
+                    <label>選擇背景風格 Style</label>
+                    <select id="bgStyle" onchange="drawMorningImage()">
+                        <option value="cyber">賽博霓虹 (Cyberpunk Neon)</option>
+                        <option value="buddha">經典佛光 (Golden Devotion)</option>
+                        <option value="sunrise">大自然晨曦 (Nature Sunrise)</option>
+                        <option value="romantic">浪漫紫羅蘭 (Purple Dream)</option>
                     </select>
-                    <input type="file" id="imageLoader" accept="image/*">
                 </div>
-            </div>
-
-            <div class="control-group">
-                <label>2. 內容設定</label>
-                <textarea id="textInput">早安！&#10;平安喜樂，福氣滿滿。&#10;認同請分享！ 👍</textarea>
-                <div class="btn-row">
-                    <button class="btn-random" id="btnRandomClassic">🎲 經典正能量</button>
-                    <button class="btn-random" id="btnRandomMeme" style="--text-main: #ffb199; --glass-border: rgba(255,8,68,0.3);">🤪 年輕人毒舌</button>
+                <div class="input-group">
+                    <label>主標題文字 (例如：早安)</label>
+                    <input type="text" id="mainText" value="早安" oninput="drawMorningImage()">
                 </div>
-            </div>
-
-            <div class="control-group">
-                <label>3. 樣式調配</label>
-                <div class="style-row">
-                    <select id="fontFamily">
-                        <option value="DFKai-SB, BiauKai, sans-serif">正宗標楷體</option>
-                        <option value="'Microsoft JhengHei', sans-serif">現代正黑體</option>
-                        <option value="'SF Pro Display', sans-serif">極簡 iOS 風</option>
-                    </select>
-                    <div style="text-align: center;">
-                        <input type="color" id="textColor" value="#ffff00">
-                        <span style="font-size: 0.7rem; color: var(--text-sub);">字色</span>
+                <div class="input-group">
+                    <label>副標題/祝賀語</label>
+                    <input type="text" id="subText" value="平安喜樂 • 萬事如意" oninput="drawMorningImage()">
+                </div>
+                <div class="color-pickers">
+                    <div class="input-group">
+                        <label>主文字顏色</label>
+                        <input type="color" id="mainColor" value="#ffffff" onchange="drawMorningImage()">
                     </div>
-                    <div style="text-align: center;">
-                        <input type="color" id="strokeColor" value="#ff0000">
-                        <span style="font-size: 0.7rem; color: var(--text-sub);">邊色</span>
+                    <div class="input-group">
+                        <label>副文字顏色</label>
+                        <input type="color" id="subColor" value="#ffff00" onchange="changeSubColor(this.value)">
                     </div>
                 </div>
+                <button class="btn-download" onclick="downloadMorningImage()">💾 下載圖片分享 LINE</button>
             </div>
-
-            <button class="btn-main" id="btnDownload">
-                <span>💾</span> 下載 PNG | 發送至 LINE
-            </button>
+            <div class="preview-panel">
+                <canvas id="morningCanvas" width="500" height="500"></canvas>
+            </div>
         </div>
     </div>
 
     <script>
-        // --- 此處 JavaScript 邏輯與原本基本一致，僅優化了初始顯示 ---
-        const canvas = document.getElementById('memeCanvas');
-        const ctx = canvas.getContext('2d');
+        let currentView = 'hub';
 
-        // DOM 元素
-        const textInput = document.getElementById('textInput');
-        const imageLoader = document.getElementById('imageLoader');
-        const defaultBg = document.getElementById('defaultBg');
-        const fontFamily = document.getElementById('fontFamily');
-        const textColor = document.getElementById('textColor');
-        const strokeColor = document.getElementById('strokeColor');
-        const btnDownload = document.getElementById('btnDownload');
-        const btnRandomClassic = document.getElementById('btnRandomClassic');
-        const btnRandomMeme = document.getElementById('btnRandomMeme');
-
-        let userImage = null;
-
-        // 語錄資料庫
-        const classicQuotes = [
-            "早安！\n知足常樂，健康是財富。\n認同請分享！👍",
-            "平安喜樂！\n新的一天，從微笑開始。\n祝好友們順心如意。☕",
-            "功德圓滿，福氣臨門！\n祝您事事順心，天天開心！🌸",
-            "早安朋友！\n送你一份清晨的祝福，\n願你健康平安、萬事如意！✨"
-        ];
-
-        const memeQuotes = [
-            "早安！\n再堅持一下，\n中午就可以睡午覺了。🙃",
-            "今天也是充滿希望的一天——\n希望很快就能下班。☀️",
-            "錢不是萬能的，\n有時候也是九千能。\n早安，打工人！💪",
-            "早安！\n歲月靜好，\n是因為有人幫你付房租。🏠"
-        ];
-
-        // 初始化
-        window.onload = function() {
-            // 監聽所有輸入元件，即時更新預覽
-            textInput.addEventListener('input', drawMeme);
-            fontFamily.addEventListener('change', drawMeme);
-            textColor.addEventListener('change', drawMeme);
-            strokeColor.addEventListener('change', drawMeme);
-            defaultBg.addEventListener('change', () => {
-                userImage = null; // 切換回預設背景時清除上傳的圖
-                imageLoader.value = ''; 
-                drawMeme();
-            });
-
-            // 處理上傳圖片
-            imageLoader.addEventListener('change', function(e) {
-                if(!e.target.files[0]) return;
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    const img = new Image();
-                    img.onload = function() {
-                        userImage = img;
-                        drawMeme();
-                    }
-                    img.src = event.target.result;
-                }
-                reader.readAsDataURL(e.target.files[0]);
-            });
-
-            // 隨機語錄按鈕
-            btnRandomClassic.addEventListener('click', () => {
-                textInput.value = classicQuotes[Math.floor(Math.random() * classicQuotes.length)];
-                drawMeme();
-            });
-
-            btnRandomMeme.addEventListener('click', () => {
-                textInput.value = memeQuotes[Math.floor(Math.random() * memeQuotes.length)];
-                drawMeme();
-            });
-
-            // 下載功能
-            btnDownload.addEventListener('click', () => {
-                const link = document.createElement('a');
-                link.download = 'GMorningArt_' + Date.now() + '.png';
-                link.href = canvas.toDataURL();
-                link.click();
-            });
-
-            // 確保字體加載後再繪製
-            if (document.fonts) {
-                document.fonts.ready.then(drawMeme);
-            } else {
-                setTimeout(drawMeme, 500);
+        // 頁面路由切換
+        function navigateTo(viewId) {
+            currentView = viewId;
+            document.querySelectorAll('.view-section').forEach(section => section.classList.remove('active'));
+            document.getElementById(`${viewId}-view`).classList.add('active');
+            
+            if (viewId === 'basketball') {
+                resizeBasketball();
+                ball.reset();
+            } else if (viewId === 'cloze') {
+                initClozeQuiz();
+            } else if (viewId === 'morning') {
+                drawMorningImage();
             }
-        };
-
-        // 繪製核心邏輯
-        function drawMeme() {
-            // 1. 清除畫布
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // 2. 繪製背景
-            if (userImage) {
-                const scale = Math.max(canvas.width / userImage.width, canvas.height / userImage.height);
-                const x = (canvas.width / 2) - (userImage.width / 2) * scale;
-                const y = (canvas.height / 2) - (userImage.height / 2) * scale;
-                ctx.drawImage(userImage, x, y, userImage.width * scale, userImage.height * scale);
-                // 添加一層淡淡的深色遮罩，增加文字可讀性
-                ctx.fillStyle = 'rgba(0,0,0,0.2)';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-            } else {
-                let grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-                if (defaultBg.value === 'gradient1') {
-                    grad.addColorStop(0, '#00f2fe'); grad.addColorStop(1, '#4facfe');
-                } else if (defaultBg.value === 'gradient2') {
-                    grad.addColorStop(0, '#ff0844'); grad.addColorStop(1, '#ffb199');
-                } else {
-                    grad.addColorStop(0, '#43e97b'); grad.addColorStop(1, '#38f9d7');
-                }
-                ctx.fillStyle = grad;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-            }
-
-            // 3. 設置字體樣式
-            const lines = textInput.value.split('\n');
-            const baseFontSize = 42; 
-            ctx.font = `bold ${baseFontSize}px ${fontFamily.value}`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-
-            // 計算文字整體高度，垂直置中
-            const lineHeight = baseFontSize * 1.3;
-            const totalHeight = lines.length * lineHeight;
-            let startY = (canvas.height - totalHeight) / 2 + lineHeight / 2;
-
-            // 4. 逐行繪製文字 (保留長輩圖的粗邊框核心精神，但看起來更精緻)
-            lines.forEach((line, index) => {
-                const currentY = startY + (index * lineHeight);
-                
-                // 繪製陰影 (增加層次感，這是現代設計的小技巧)
-                ctx.fillStyle = 'rgba(0,0,0,0.5)';
-                ctx.fillText(line, canvas.width / 2 + 3, currentY + 3);
-
-                // 繪製超粗邊框
-                ctx.strokeStyle = strokeColor.value;
-                ctx.lineWidth = 9;
-                ctx.lineJoin = 'round';
-                ctx.strokeText(line, canvas.width / 2, currentY);
-
-                // 填入主要顏色
-                ctx.fillStyle = textColor.value;
-                ctx.fillText(line, canvas.width / 2, currentY);
-            });
         }
+
+        /* ==========================================================================
+           早安圖產生器核心程式碼
+           ========================================================================== */
+        const mCanvas = document.getElementById('morningCanvas');
+        const mCtx = mCanvas.getContext('2d');
+
+        function changeSubColor(val) { drawMorningImage(); }
+
+        function drawMorningImage() {
+            const style = document.getElementById('bgStyle').value;
+            const mainText = document.getElementById('mainText').value;
+            const subText = document.getElementById('subText').value;
+            const mainColor = document.getElementById('mainColor').value;
+            const subColor = document.getElementById('subColor').value;
+
+            // 1. 繪製精緻漸層背景
+            let grad = mCtx.createLinearGradient(0, 0, 0, 500);
+            if (style === 'cyber') {
+                grad.addColorStop(0, '#0f0c20'); grad.addColorStop(0.5, '#ff007f'); grad.addColorStop(1, '#00f2fe');
+            } else if (style === 'buddha') {
+                grad = mCtx.createRadialGradient(250, 180, 20, 250, 180, 300);
+                grad.addColorStop(0, '#fff200'); grad.addColorStop(0.4, '#ff7300'); grad.addColorStop(1, '#7a0016');
+            } else if (style === 'sunrise') {
+                grad.addColorStop(0, '#00c6ff'); grad.addColorStop(0.6, '#ffe066'); grad.addColorStop(1, '#f77737');
+            } else if (style === 'romantic') {
+                grad.addColorStop(0, '#4e54c8'); grad.addColorStop(1, '#8f94fb');
+            }
+            mCtx.fillStyle = grad; mCtx.fillRect(0, 0, 500, 500);
+
+            // 2. 裝飾性幾何背景元素 (增加質感)
+            mCtx.save();
+            if (style === 'buddha') {
+                // 畫佛光光芒
+                mCtx.strokeStyle = 'rgba(255,255,255,0.15)'; mCtx.lineWidth = 2;
+                for (let i = 0; i < 360; i += 15) {
+                    mCtx.beginPath(); mCtx.moveTo(250, 180);
+                    mCtx.lineTo(250 + Math.cos(i * Math.PI/180)*500, 180 + Math.sin(i * Math.PI/180)*500);
+                    mCtx.stroke();
+                }
+            } else if (style === 'cyber') {
+                // 畫科技感線條
+                mCtx.strokeStyle = 'rgba(255,255,255,0.05)'; mCtx.lineWidth = 1;
+                for(let i=0; i<500; i+=25){
+                    mCtx.beginPath(); mCtx.moveTo(i, 0); mCtx.lineTo(i, 500); mCtx.stroke();
+                    mCtx.beginPath(); mCtx.moveTo(0, i); mCtx.lineTo(500, i); mCtx.stroke();
+                }
+            }
+            mCtx.restore();
+
+            // 3. 繪製主標題
+            mCtx.save();
+            mCtx.textAlign = 'center'; mCtx.textBaseline = 'middle';
+            mCtx.font = 'bold 84px "Microsoft JhengHei", sans-serif';
+            mCtx.fillStyle = mainColor;
+            mCtx.shadowColor = 'rgba(0,0,0,0.6)'; mCtx.shadowBlur = 15; mCtx.shadowOffsetX = 4; mCtx.shadowOffsetY = 4;
+            mCtx.fillText(mainText, 250, 180);
+            mCtx.restore();
+
+            // 4. 繪製副標題
+            mCtx.save();
+            mCtx.textAlign = 'center'; mCtx.textBaseline = 'middle';
+            mCtx.font = 'bold 32px "Microsoft JhengHei", sans-serif';
+            mCtx.fillStyle = subColor;
+            mCtx.shadowColor = 'rgba(0,0,0,0.8)'; mCtx.shadowBlur = 10; mCtx.shadowOffsetX = 2; mCtx.shadowOffsetY = 2;
+            mCtx.fillText(subText, 250, 360);
+            mCtx.restore();
+
+            // 5. 底部裝飾邊框條
+            mCtx.fillStyle = 'rgba(255,255,255,0.1)';
+            mCtx.fillRect(50, 410, 400, 2);
+        }
+
+        function downloadMorningImage() {
+            const link = document.createElement('a');
+            link.download = 'good_morning.png';
+            link.href = mCanvas.toDataURL('image/png');
+            link.click();
+        }
+
+        /* ==========================================================================
+           投籃機核心程式碼
+           ========================================================================= */
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const scoreBoardEl = document.getElementById('scoreBoard');
+
+        let bWidth, bHeight, dpr; let bScore = 0; let particles = [];
+        let swipeStart = { x: 0, y: 0, time: 0 }; let isDragging = false;
+        const GRAVITY = 0.5;
+
+        function resizeBasketball() {
+            if (currentView !== 'basketball') return;
+            dpr = window.devicePixelRatio || 1; bWidth = window.innerWidth; bHeight = window.innerHeight;
+            canvas.width = bWidth * dpr; canvas.height = bHeight * dpr;
+            canvas.style.width = bWidth + 'px'; canvas.style.height = bHeight + 'px';
+            ctx.scale(dpr, dpr); if (hoop) hoop.updatePosition();
+        }
+
+        class Hoop {
+            constructor() { this.updatePosition(); }
+            updatePosition() {
+                this.x = bWidth / 2; this.y = bHeight * 0.28; this.radius = Math.min(bWidth * 0.1, 55);
+                this.backboardW = this.radius * 2.8; this.backboardH = this.radius * 1.8;
+            }
+            draw() {
+                ctx.save(); ctx.fillStyle = 'rgba(255, 255, 255, 0.02)'; ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)'; ctx.lineWidth = 3;
+                ctx.strokeRect(this.x - this.backboardW/2, this.y - this.backboardH, this.backboardW, this.backboardH);
+                ctx.fillRect(this.x - this.backboardW/2, this.y - this.backboardH, this.backboardW, this.backboardH);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'; ctx.strokeRect(this.x - this.backboardW/5, this.y - this.backboardH/1.8, this.backboardW/2.5, this.backboardH/2.5);
+                ctx.beginPath(); ctx.moveTo(this.x - this.radius, this.y); ctx.quadraticCurveTo(this.x - this.radius*0.6, this.y + this.radius*1.2, this.x - this.radius*0.4, this.y + this.radius * 1.3);
+                ctx.lineTo(this.x + this.radius*0.4, this.y + this.radius * 1.3); ctx.quadraticCurveTo(this.x + this.radius*0.6, this.y + this.radius*1.2, this.x + this.radius, this.y);
+                const netGrad = ctx.createLinearGradient(this.x, this.y, this.x, this.y + this.radius*1.3);
+                netGrad.addColorStop(0, 'rgba(255, 255, 255, 0.35)'); netGrad.addColorStop(1, 'rgba(255, 255, 255, 0.02)');
+                ctx.fillStyle = netGrad; ctx.fill();
+                ctx.beginPath(); ctx.ellipse(this.x, this.y, this.radius, this.radius * 0.3, 0, 0, Math.PI * 2);
+                ctx.lineWidth = 7; ctx.strokeStyle = '#ff0055'; ctx.shadowColor = '#ff0055'; ctx.shadowBlur = 20; ctx.stroke(); ctx.restore();
+            }
+        }
+
+        class Ball {
+            constructor() { this.reset(); }
+            reset() {
+                this.baseRadius = Math.min(bWidth * 0.09, 45) || 40; this.x = bWidth / 2 || 200; this.y = bHeight * 0.82 || 500;
+                this.radius = this.baseRadius; this.vx = 0; this.vy = 0; this.scale = 1; this.isFlying = false; this.scored = false; this.zProgress = 0;
+            }
+            update() {
+                if (!this.isFlying) return;
+                this.vy += GRAVITY; this.x += this.vx; this.y += this.vy;
+                if (this.vy < 0) { this.zProgress += 0.018; this.scale = 1 - (this.zProgress * 0.45); } else { this.scale = Math.max(0.55, this.scale); }
+                this.radius = this.baseRadius * this.scale;
+                if (this.x - this.radius < 0 || this.x + this.radius > bWidth) { this.vx *= -0.6; this.x = this.x - this.radius < 0 ? this.radius : bWidth - this.radius; }
+                if (!this.scored && this.vy > 0 && this.y >= hoop.y - 15 && this.y <= hoop.y + 20) {
+                    let distToCenter = Math.abs(this.x - hoop.x);
+                    if (distToCenter < hoop.radius * 0.8) { this.scored = true; this.handleScore(); this.vx *= 0.2; this.vy = 4; }
+                    else if (distToCenter < hoop.radius + this.radius) { this.vx = (this.x - hoop.x) * 0.3; this.vy *= -0.4; }
+                }
+                if (this.y - this.radius > bHeight || this.y < -200) { this.reset(); }
+            }
+            draw() {
+                ctx.save(); ctx.shadowColor = '#ff6b00'; ctx.shadowBlur = isDragging && !this.isFlying ? 35 : 15;
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                const grad = ctx.createRadialGradient(this.x - this.radius*0.3, this.y - this.radius*0.3, this.radius*0.1, this.x, this.y, this.radius);
+                grad.addColorStop(0, '#ff9e00'); grad.addColorStop(1, '#e65c00'); ctx.fillStyle = grad; ctx.fill();
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)'; ctx.lineWidth = 2 * this.scale; ctx.shadowBlur = 0;
+                ctx.beginPath(); ctx.moveTo(this.x - this.radius, this.y); ctx.lineTo(this.x + this.radius, this.y); ctx.moveTo(this.x, this.y - this.radius); ctx.lineTo(this.x, this.y + this.radius); ctx.stroke(); ctx.restore();
+            }
+            handleScore() {
+                bScore++; scoreEl.innerText = bScore; scoreBoardEl.classList.add('score-bounce');
+                setTimeout(() => scoreBoardEl.classList.remove('score-bounce'), 250);
+                for (let i = 0; i < 35; i++) particles.push(new Particle(hoop.x, hoop.y, '#00f2fe'));
+            }
+        }
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x; this.y = y; this.color = color; this.radius = Math.random() * 4 + 1;
+                this.vx = (Math.random() - 0.5) * 14; this.vy = (Math.random() - 0.6) * 12; this.alpha = 1; this.decay = Math.random() * 0.025 + 0.02;
+            }
+            update() { this.x += this.vx; this.y += this.vy; this.vy += 0.2; this.alpha -= this.decay; }
+            draw() {
+                if (this.alpha <= 0) return;
+                ctx.save(); ctx.globalAlpha = this.alpha; ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color; ctx.shadowColor = this.color; ctx.shadowBlur = 10; ctx.fill(); ctx.restore();
+            }
+        }
+
+        const hoop = new Hoop(); let ball = new Ball();
+
+        function gameLoop() {
+            if (currentView === 'basketball') {
+                ctx.fillStyle = '#060913'; ctx.fillRect(0, 0, bWidth, bHeight);
+                ctx.strokeStyle = 'rgba(79, 172, 254, 0.04)'; ctx.lineWidth = 2;
+                for(let i = 0; i <= bWidth; i += bWidth/8) {
+                    ctx.beginPath(); ctx.moveTo(i, bHeight); ctx.lineTo(bWidth/2 + (i - bWidth/2)*0.2, hoop.y); ctx.stroke();
+                }
+                hoop.draw();
+                if (isDragging && !ball.isFlying) {
+                    ctx.save(); ctx.beginPath(); ctx.moveTo(ball.x, ball.y); ctx.lineTo(swipeStart.x, swipeStart.y);
+                    ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0, 242, 254, 0.25)'; ctx.stroke(); ctx.restore();
+                }
+                ball.update(); ball.draw(); particles = particles.filter(p => p.alpha > 0); particles.forEach(p => { p.update(); p.draw(); });
+            }
+            requestAnimationFrame(gameLoop);
+        }
+
+        function handleStart(clientX, clientY) {
+            if (currentView !== 'basketball' || ball.isFlying) return;
+            let dist = Math.hypot(clientX - ball.x, clientY - ball.y);
+            if (dist < ball.radius * 1.5) { isDragging = true; swipeStart.x = clientX; swipeStart.y = clientY; swipeStart.time = performance.now(); document.getElementById('hint').style.display = 'none'; }
+        }
+        function handleMove(clientX, clientY) { if (currentView === 'basketball' && isDragging && !ball.isFlying) { ball.x = clientX; ball.y = clientY; } }
+        function handleEnd(clientX, clientY) {
+            if (currentView !== 'basketball' || !isDragging || ball.isFlying) return;
+            isDragging = false; let duration = performance.now() - swipeStart.time; let diffX = clientX - swipeStart.x; let diffY = clientY - swipeStart.y;
+            if (diffY < -30 && duration > 10) {
+                ball.vx = (diffX / duration) * 19; ball.vy = (diffY / duration) * 32;
+                ball.vx = Math.max(-10, Math.min(10, ball.vx)); ball.vy = Math.max(-26, Math.min(-14, ball.vy)); ball.isFlying = true;
+            } else { ball.reset(); }
+        }
+
+        canvas.addEventListener('mousedown', e => handleStart(e.clientX, e.clientY));
+        window.addEventListener('mousemove', e => handleMove(e.clientX, e.clientY));
+        window.addEventListener('mouseup', e => handleEnd(e.clientX, e.clientY));
+        canvas.addEventListener('touchstart', e => handleStart(e.touches[0].clientX, e.touches[0].clientY));
+        canvas.addEventListener('touchmove', e => handleMove(e.touches[0].clientX, e.touches[0].clientY));
+        canvas.addEventListener('touchend', e => handleEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY));
+        window.addEventListener('resize', resizeBasketball);
+
+        /* ==========================================================================
+           英文克漏字核心程式碼
+           ========================================================================= */
+        const quizData = [
+            {
+                title: "🎵 Task 1: A Weekend Trip (週末旅行)",
+                text: "Last weekend, my family and I {blank0} to the beach. The weather {blank1} perfect, so we swam in the sea all morning. In the afternoon, my brother and I {blank2} a big sandcastle. My parents just sat {blank3} a big umbrella and read books. We had {blank4} wonderful time together.",
+                blanks: [
+                    { options: ["go", "went", "going", "goes"], correct: "went", explanation: "由句首的「Last weekend」可知為過去時態，動詞需用 went。" },
+                    { options: ["is", "was", "are", "were"], correct: "was", explanation: "主詞「The weather」為不可數名詞，視為單數且承接過去式，選 was。" },
+                    { options: ["made", "did", "thought", "played"], correct: "made", explanation: "「做沙堡」英文慣用搭配動詞 make，過去式為 made。" },
+                    { options: ["on", "under", "through", "between"], correct: "under", explanation: "空間介系詞。坐在大遮陽傘的「正下方」，故選 under。" },
+                    { options: ["an", "a", "the", "X"], correct: "a", explanation: "「度過美好時光」是 have a wonderful time，wonderful 屬子音開頭故用 a。" }
+                ]
+            },
+            {
+                title: "🎉 Task 2: Preparing for a Party (準備派對)",
+                text: "Tomorrow is my sister's birthday, and we are {blank0} a surprise party for her. Right now, my mother is baking a delicious chocolate cake {blank1} the kitchen. I {blank2} clean the living room before the guests arrive at 6:00 PM. I am a bit busy, {blank3} I am very excited. I think my sister {blank4} love the party!",
+                blanks: [
+                    { options: ["planning", "planned", "plan", "plans"], correct: "planning", explanation: "前面帶有 be 動詞 are，此處考現在進行式（同時表即將發生的未來規劃），故選 planning。" },
+                    { options: ["at", "in", "on", "next"], correct: "in", explanation: "在廚房這個室內空間「裡面」，標準用法為 in the kitchen。" },
+                    { options: ["must", "can", "may", "should"], correct: "must", explanation: "上下文「在客人來之前，我『必須』打掃好客廳」，帶有必要與義務性，選 must 最貼切。" },
+                    { options: ["because", "so", "but", "or"], correct: "but", explanation: "語意轉折。「我很忙」與「我很興奮」前後語意呈現對比，因此選 but（但是）。" },
+                    { options: ["did", "is", "will", "was"], correct: "will", explanation: "未來時態。開頭提及 Tomorrow，後半句表達主觀的未來預測，故選 will。" }
+                ]
+            }
+        ];
+
+        let currentPassage = 0; let isClozeSubmitted = false;
+
+        function initClozeQuiz() {
+            isClozeSubmitted = false; const data = quizData[currentPassage];
+            document.getElementById('passageTitle').innerText = data.title; document.getElementById('explanationPanel').style.display = "none";
+            document.getElementById('actionBtn').innerText = "檢查答案 Check Answers";
+            let correctedHtml = data.text;
+            data.blanks.forEach((blank, i) => {
+                let selectHtml = `<select class="cloze-select" id="blank-${i}" onchange="updateClozeProgress()">`;
+                selectHtml += `<option value="" disabled selected>___</option>`;
+                blank.options.forEach(opt => { selectHtml += `<option value="${opt}">${opt}</option>`; });
+                selectHtml += `</select>`;
+                correctedHtml = correctedHtml.replace(`{blank${i}}`, selectHtml);
+            });
+            document.getElementById('passageContent').innerHTML = correctedHtml; updateClozeProgress();
+        }
+
+        function updateClozeProgress() {
+            if (isClozeSubmitted) return; const data = quizData[currentPassage]; let answeredCount = 0;
+            for (let i = 0; i < data.blanks.length; i++) { if (document.getElementById(`blank-${i}`)?.value) answeredCount++; }
+            document.getElementById('progressBar').style.width = `${(answeredCount / data.blanks.length) * 100}%`;
+        }
+
+        function checkAnswers() {
+            const actionBtn = document.getElementById('actionBtn');
+            if (isClozeSubmitted) { currentPassage = (currentPassage < quizData.length - 1) ? currentPassage + 1 : 0; initClozeQuiz(); return; }
+            const data = quizData[currentPassage]; let score = 0; let allAnswered = true;
+            for (let i = 0; i < data.blanks.length; i++) { if (document.getElementById(`blank-${i}`).value === "") { allAnswered = false; break; } }
+            if (!allAnswered) { alert("請填寫所有空格後再檢查喔！"); return; }
+
+            isClozeSubmitted = true; let explanationHtml = "";
+            data.blanks.forEach((blank, i) => {
+                const select = document.getElementById(`blank-${i}`); select.disabled = true;
+                if (select.value === blank.correct) { score++; select.classList.add('correct'); } else { select.classList.add('incorrect'); }
+                explanationHtml += `<div class="exp-item" style="border-left-color: ${select.value === blank.correct ? '#2ec4b6' : '#e63946'}">
+                    <div class="exp-title">第 (${i+1}) 題：正確答案為「${blank.correct}」</div>
+                    <div class="exp-text">${blank.explanation}</div></div>`;
+            });
+            document.getElementById('scoreDisplay').innerHTML = `得分 Score: <span style="font-size: 2rem; color: #2ec4b6">${score}</span> / ${data.blanks.length}`;
+            document.getElementById('explanationList').innerHTML = explanationHtml; document.getElementById('explanationPanel').style.display = "block";
+            document.getElementById('explanationPanel').scrollIntoView({ behavior: 'smooth' });
+            actionBtn.innerText = (currentPassage < quizData.length - 1) ? "下一篇特訓 Next Passage ➡️" : "重新挑戰 Restart Quiz 🔄";
+        }
+
+        // 滑鼠聚光燈微光特效
+        document.querySelectorAll('.project-card').forEach(card => {
+            card.addEventListener('mousemove', e => {
+                const rect = card.getBoundingClientRect();
+                card.style.setProperty('--x', `${e.clientX - rect.left}px`); card.style.setProperty('--y', `${e.clientY - rect.top}px`);
+            });
+        });
+
+        gameLoop();
     </script>
 </body>
 </html>

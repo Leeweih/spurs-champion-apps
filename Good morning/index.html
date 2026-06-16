@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GMorning Modern Art | 先進早安圖產生器</title>
+    <style>
+        /* --- 1. 全域變數與重設 (更乾淨俐落的基礎) --- */
+        :root {
+            --primary-gradient: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%); /* 活力藍漸層 */
+            --secondary-gradient: linear-gradient(135deg, #ff0844 0%, #ffb199 100%); /* 毒舌橘漸層 */
+            --bg-color: #0d1117; /* 深色背景 */
+            --text-main: #f0f6fc;
+            --text-sub: #8b949e;
+            --glass-bg: rgba(255, 255, 255, 0.05); /* 玻璃擬態背景 */
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --neon-accent: #00f2fe;
+            --font-family-ui: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, "Microsoft JhengHei";
+            --ease: cubic-bezier(0.23, 1, 0.32, 1); /* 平滑動態 */
+        }
+
+        body {
+            font-family: var(--font-family-ui);
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* --- 2. 動態漸層背景 --- */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 10% 10%, rgba(79, 172, 254, 0.15) 0%, transparent 40%),
+                        radial-gradient(circle at 90% 90%, rgba(255, 8, 68, 0.1) 0%, transparent 40%);
+            animation: bgAnimation 20s infinite alternate linear;
+            z-index: -1;
+        }
+
+        @keyframes bgAnimation {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            100% { transform: translate(-5%, -5%) rotate(5deg); }
+        }
+
+        /* --- 3. 標題設計 (乾淨、現代) --- */
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 5px;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            letter-spacing: -1px;
+        }
+
+        .subtitle {
+            color: var(--text-sub);
+            font-size: 1rem;
+            margin-bottom: 40px;
+            text-align: center;
+            font-weight: 300;
+        }
+
+        /* --- 4. 主容器 (玻璃擬態、中央佈局) --- */
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            max-width: 650px; /* 緊湊佈局 */
+            width: 100%;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 40px;
+            border-radius: 24px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease);
+        }
+
+        .container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+        }
+
+        /* --- 5. 預覽區域 (像展示藝術品) --- */
+        .preview-area {
+            display: flex;
+            justify-content: center;
+            position: relative;
+        }
+
+        canvas {
+            border-radius: 16px;
+            max-width: 100%;
+            height: auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: transform 0.3s var(--ease);
+            border: 1px solid var(--glass-border);
+        }
+
+        /* --- 6. 控制面板 (設計感核心) --- */
+        .control-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* 標籤設計 */
+        label {
+            font-weight: 600;
+            color: var(--text-main);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.8;
+        }
+
+        /* 統一的現代輸入框樣式 */
+        textarea, select, input[type="file"] {
+            width: 100%;
+            padding: 15px;
+            box-sizing: border-box;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            font-size: 1rem;
+            color: var(--text-main);
+            font-family: var(--font-family-ui);
+            transition: all 0.3s var(--ease);
+        }
+
+        textarea:focus, select:focus, input[type="file"]:focus {
+            outline: none;
+            border-color: var(--neon-accent);
+            box-shadow: 0 0 10px rgba(0, 242, 254, 0.3);
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        textarea {
+            height: 100px;
+            resize: none;
+            line-height: 1.5;
+        }
+
+        /* 檔案上傳按鈕美化 */
+        input[type="file"] {
+            padding: 12px;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        input[type="file"]::file-selector-button {
+            background: var(--glass-bg);
+            color: var(--text-main);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 5px 10px;
+            margin-right: 10px;
+            transition: all 0.3s var(--ease);
+        }
+        input[type="file"]:hover::file-selector-button {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* --- 7. 按鈕設計 (動態、年輕化) --- */
+        .btn-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        button {
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s var(--ease);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        /* 按鈕點擊漣漪效果 */
+        button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100px;
+            height: 100px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            opacity: 0;
+            transition: transform 0.5s, opacity 1s;
+        }
+        button:active::after {
+            transform: translate(-50%, -50%) scale(4);
+            opacity: 1;
+            transition: 0s;
+        }
+
+        /* 🎲 按鈕樣式 */
+        .btn-random {
+            background: var(--glass-bg);
+            color: var(--text-main);
+            border: 1px solid var(--glass-border);
+        }
+        .btn-random:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        /* 💾 下載按鈕樣式 (主動態按鈕) */
+        .btn-main {
+            background: var(--primary-gradient);
+            color: #fff;
+            grid-column: span 2;
+            font-size: 1.1rem;
+            margin-top: 15px;
+            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.3);
+        }
+        .btn-main:hover {
+            box-shadow: 0 8px 25px rgba(79, 172, 254, 0.5);
+            transform: translateY(-3px) scale(1.02);
+        }
+
+        /* --- 8. 樣式調整 (精細化) --- */
+        .style-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 15px;
+            align-items: end;
+        }
+
+        /* 顏色選擇器美化 */
+        input[type="color"] {
+            -webkit-appearance: none;
+            border: none;
+            width: 100%;
+            height: 52px; /* 與 select 高度一致 */
+            border-radius: 12px;
+            background: transparent;
+            cursor: pointer;
+            padding: 0;
+        }
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+        input[type="color"]::-webkit-color-swatch {
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+        }
+
+        @media (max-width: 600px) {
+            .container { padding: 25px; }
+            h1 { font-size: 2rem; }
+            .style-row { grid-template-columns: 1fr; gap: 10px; }
+            input[type="color"] { height: 45px; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>GMorning Modern Art</h1>
+    <div class="subtitle">先進早安圖產生器 | 量子設計版本</div>
+
+    <div class="container">
+        <!-- 畫布預覽區 -->
+        <div class="preview-area">
+            <canvas id="memeCanvas" width="600" height="600"></canvas>
+        </div>
+
+        <!-- 控制後台 -->
+        <div class="control-panel">
+            <div class="control-group">
+                <label>1. 素材來源</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <select id="defaultBg">
+                        <option value="gradient1">🌅 預設：晨曦極光</option>
+                        <option value="gradient2">🌺 預設：富貴荷花紅</option>
+                        <option value="gradient3">🌳 預設：森林綠意</option>
+                    </select>
+                    <input type="file" id="imageLoader" accept="image/*">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>2. 內容設定</label>
+                <textarea id="textInput">早安！&#10;平安喜樂，福氣滿滿。&#10;認同請分享！ 👍</textarea>
+                <div class="btn-row">
+                    <button class="btn-random" id="btnRandomClassic">🎲 經典正能量</button>
+                    <button class="btn-random" id="btnRandomMeme" style="--text-main: #ffb199; --glass-border: rgba(255,8,68,0.3);">🤪 年輕人毒舌</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>3. 樣式調配</label>
+                <div class="style-row">
+                    <select id="fontFamily">
+                        <option value="DFKai-SB, BiauKai, sans-serif">正宗標楷體</option>
+                        <option value="'Microsoft JhengHei', sans-serif">現代正黑體</option>
+                        <option value="'SF Pro Display', sans-serif">極簡 iOS 風</option>
+                    </select>
+                    <div style="text-align: center;">
+                        <input type="color" id="textColor" value="#ffff00">
+                        <span style="font-size: 0.7rem; color: var(--text-sub);">字色</span>
+                    </div>
+                    <div style="text-align: center;">
+                        <input type="color" id="strokeColor" value="#ff0000">
+                        <span style="font-size: 0.7rem; color: var(--text-sub);">邊色</span>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn-main" id="btnDownload">
+                <span>💾</span> 下載 PNG | 發送至 LINE
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- 此處 JavaScript 邏輯與原本基本一致，僅優化了初始顯示 ---
+        const canvas = document.getElementById('memeCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // DOM 元素
+        const textInput = document.getElementById('textInput');
+        const imageLoader = document.getElementById('imageLoader');
+        const defaultBg = document.getElementById('defaultBg');
+        const fontFamily = document.getElementById('fontFamily');
+        const textColor = document.getElementById('textColor');
+        const strokeColor = document.getElementById('strokeColor');
+        const btnDownload = document.getElementById('btnDownload');
+        const btnRandomClassic = document.getElementById('btnRandomClassic');
+        const btnRandomMeme = document.getElementById('btnRandomMeme');
+
+        let userImage = null;
+
+        // 語錄資料庫
+        const classicQuotes = [
+            "早安！\n知足常樂，健康是財富。\n認同請分享！👍",
+            "平安喜樂！\n新的一天，從微笑開始。\n祝好友們順心如意。☕",
+            "功德圓滿，福氣臨門！\n祝您事事順心，天天開心！🌸",
+            "早安朋友！\n送你一份清晨的祝福，\n願你健康平安、萬事如意！✨"
+        ];
+
+        const memeQuotes = [
+            "早安！\n再堅持一下，\n中午就可以睡午覺了。🙃",
+            "今天也是充滿希望的一天——\n希望很快就能下班。☀️",
+            "錢不是萬能的，\n有時候也是九千能。\n早安，打工人！💪",
+            "早安！\n歲月靜好，\n是因為有人幫你付房租。🏠"
+        ];
+
+        // 初始化
+        window.onload = function() {
+            // 監聽所有輸入元件，即時更新預覽
+            textInput.addEventListener('input', drawMeme);
+            fontFamily.addEventListener('change', drawMeme);
+            textColor.addEventListener('change', drawMeme);
+            strokeColor.addEventListener('change', drawMeme);
+            defaultBg.addEventListener('change', () => {
+                userImage = null; // 切換回預設背景時清除上傳的圖
+                imageLoader.value = ''; 
+                drawMeme();
+            });
+
+            // 處理上傳圖片
+            imageLoader.addEventListener('change', function(e) {
+                if(!e.target.files[0]) return;
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.onload = function() {
+                        userImage = img;
+                        drawMeme();
+                    }
+                    img.src = event.target.result;
+                }
+                reader.readAsDataURL(e.target.files[0]);
+            });
+
+            // 隨機語錄按鈕
+            btnRandomClassic.addEventListener('click', () => {
+                textInput.value = classicQuotes[Math.floor(Math.random() * classicQuotes.length)];
+                drawMeme();
+            });
+
+            btnRandomMeme.addEventListener('click', () => {
+                textInput.value = memeQuotes[Math.floor(Math.random() * memeQuotes.length)];
+                drawMeme();
+            });
+
+            // 下載功能
+            btnDownload.addEventListener('click', () => {
+                const link = document.createElement('a');
+                link.download = 'GMorningArt_' + Date.now() + '.png';
+                link.href = canvas.toDataURL();
+                link.click();
+            });
+
+            // 確保字體加載後再繪製
+            if (document.fonts) {
+                document.fonts.ready.then(drawMeme);
+            } else {
+                setTimeout(drawMeme, 500);
+            }
+        };
+
+        // 繪製核心邏輯
+        function drawMeme() {
+            // 1. 清除畫布
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 2. 繪製背景
+            if (userImage) {
+                const scale = Math.max(canvas.width / userImage.width, canvas.height / userImage.height);
+                const x = (canvas.width / 2) - (userImage.width / 2) * scale;
+                const y = (canvas.height / 2) - (userImage.height / 2) * scale;
+                ctx.drawImage(userImage, x, y, userImage.width * scale, userImage.height * scale);
+                // 添加一層淡淡的深色遮罩，增加文字可讀性
+                ctx.fillStyle = 'rgba(0,0,0,0.2)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            } else {
+                let grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+                if (defaultBg.value === 'gradient1') {
+                    grad.addColorStop(0, '#00f2fe'); grad.addColorStop(1, '#4facfe');
+                } else if (defaultBg.value === 'gradient2') {
+                    grad.addColorStop(0, '#ff0844'); grad.addColorStop(1, '#ffb199');
+                } else {
+                    grad.addColorStop(0, '#43e97b'); grad.addColorStop(1, '#38f9d7');
+                }
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
+            // 3. 設置字體樣式
+            const lines = textInput.value.split('\n');
+            const baseFontSize = 42; 
+            ctx.font = `bold ${baseFontSize}px ${fontFamily.value}`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // 計算文字整體高度，垂直置中
+            const lineHeight = baseFontSize * 1.3;
+            const totalHeight = lines.length * lineHeight;
+            let startY = (canvas.height - totalHeight) / 2 + lineHeight / 2;
+
+            // 4. 逐行繪製文字 (保留長輩圖的粗邊框核心精神，但看起來更精緻)
+            lines.forEach((line, index) => {
+                const currentY = startY + (index * lineHeight);
+                
+                // 繪製陰影 (增加層次感，這是現代設計的小技巧)
+                ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                ctx.fillText(line, canvas.width / 2 + 3, currentY + 3);
+
+                // 繪製超粗邊框
+                ctx.strokeStyle = strokeColor.value;
+                ctx.lineWidth = 9;
+                ctx.lineJoin = 'round';
+                ctx.strokeText(line, canvas.width / 2, currentY);
+
+                // 填入主要顏色
+                ctx.fillStyle = textColor.value;
+                ctx.fillText(line, canvas.width / 2, currentY);
+            });
+        }
+    </script>
+</body>
+</html>
